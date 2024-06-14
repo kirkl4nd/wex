@@ -14,9 +14,12 @@ pub async fn construct_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -
 fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String, String) {
     let mut breadcrumb_navigation = String::from("<a href=\"/\">Home</a> / ");
     let mut directory_contents = String::new();
+
+    // Check if the current path is not the root directory
     if path_str != "." {
         let mut breadcrumb_path = String::new();
-        for (index, component) in path_str.split('/').filter(|&c| !c.is_empty()).enumerate() {
+        let path_components: Vec<&str> = path_str.split('/').filter(|&c| !c.is_empty()).collect();
+        for (index, component) in path_components.iter().enumerate() {
             if index > 0 {
                 breadcrumb_path.push('/');
             }
@@ -26,7 +29,15 @@ fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String
                 breadcrumb_path, component
             ));
         }
+
+        // Add the "../" link at the top of the directory contents with an up-arrow icon
+        let parent_link = format!("/{}/..", path_str.trim_end_matches('/'));
+        directory_contents.push_str(&format!(
+            "<li class=\"up-directory\"><span class=\"icon up-icon\"></span><a href=\"{}\">../</a></li>",
+            parent_link
+        ));
     }
+
     for entry in entries {
         let file_name = entry.file_name().unwrap().to_string_lossy();
         let link_path = format!("{}/{}", path_str, file_name);
