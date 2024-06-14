@@ -12,11 +12,10 @@ impl FileManager {
         FileManager { base_path }
     }
 
-    /// Helper function to construct a full path from a relative path.
+    /// Helper function to construct a full path from a relative path, ensuring it's within the base path.
     fn full_path(&self, relative_path: &str) -> io::Result<PathBuf> {
-        let sanitized_path = Path::new(relative_path).strip_prefix("../").unwrap_or(Path::new(relative_path));
-        let full_path = self.base_path.join(sanitized_path);
-        let canonical_path = full_path.canonicalize()?;
+        let sanitized_path = self.base_path.join(relative_path);
+        let canonical_path = sanitized_path.canonicalize()?;
         if canonical_path.starts_with(&self.base_path) {
             Ok(canonical_path)
         } else {
