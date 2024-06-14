@@ -1,5 +1,5 @@
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Responder, middleware::Logger};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use crate::fs::FileManager;
 use std::fs;
 
@@ -9,12 +9,35 @@ async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<Stri
     // Extract host information from the request headers
     let host = req.headers().get("host").and_then(|v| v.to_str().ok()).unwrap_or("unknown host");
 
-    match file_manager.list_directory(&path_str) {
-        Ok(entries) => {
-            let html_content = construct_html(&host, &path_str, entries).await;
-            HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_content)
+    match file_manager.path_type(&path_str) {
+        Ok(file_type) => {
+            if file_type.is_dir() {
+                match file_manager.list_directory(&path_str) {
+                    Ok(entries) => {
+                        let html_content = construct_html(&host, &path_str, entries).await;
+                        HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_content)
+                    },
+                    Err(e) => {
+                        log::error!("Failed to list directory: {}", e);
+                        HttpResponse::InternalServerError().body(format!("Internal server error: {}", e))
+                    },
+                }
+            } else if file_type.is_file() {
+                match file_manager.read_file_contents(&path_str) {
+                    Ok(contents) => HttpResponse::Ok().content_type("application/octet-stream").body(contents),
+                    Err(e) => {
+                        log::error!("Failed to read file: {}", e);
+                        HttpResponse::InternalServerError().body(format!("Internal server error: {}", e))
+                    },
+                }
+            } else {
+                HttpResponse::NotFound().body("Resource is neither a file nor a directory")
+            }
         },
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(e) => {
+            log::error!("Error determining file type: {}", e);
+            HttpResponse::InternalServerError().body(format!("Internal server error: {}", e))
+        },
     }
 }
 
@@ -36,7 +59,7 @@ async fn construct_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -> St
             let link = format!(" <a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component);
             breadcrumb_navigation.push_str(&link);
         }
-        let parent_path = Path::new(&path_str).parent().map_or(".", |p| p.to_str().unwrap_or("."));
+        let parent_path = std::path::Path::new(&path_str).parent().map_or(".", |p| p.to_str().unwrap_or("."));
         directory_contents.push_str(&format!("<li class=\"up-directory\"><span class=\"icon folder-icon\"></span><a href=\"/{0}\">../</a></li>", parent_path));
     }
 
