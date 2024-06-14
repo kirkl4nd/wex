@@ -1,6 +1,7 @@
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Responder, middleware::Logger};
+use openssl::ssl::SslAcceptorBuilder;
 use std::path::PathBuf;
-use crate::fs::FileManager;
+use crate::file_manager::FileManager;
 use std::fs;
 
 async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<String>>, file_manager: web::Data<FileManager>) -> impl Responder {
@@ -75,7 +76,7 @@ fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String
     (breadcrumb_navigation, directory_contents)
 }
 
-pub async fn run_http_server(file_manager: FileManager) -> std::io::Result<()> {
+pub async fn run_http_server(file_manager: FileManager, builder: SslAcceptorBuilder) -> std::io::Result<()> {
     let file_manager_data = web::Data::new(file_manager);
     HttpServer::new(move || {
         App::new()
@@ -84,7 +85,7 @@ pub async fn run_http_server(file_manager: FileManager) -> std::io::Result<()> {
             .route("/", web::get().to(file_or_directory_handler))
             .route("/{path:.*}", web::get().to(file_or_directory_handler))
     })
-    .bind("127.0.0.1:8080")?
+    .bind_openssl("127.0.0.1:8080", builder)?
     .run()
     .await
 }

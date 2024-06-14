@@ -1,11 +1,13 @@
 use log::{warn, info};
 use std::env;
 use std::path::PathBuf;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
-mod fs;
+mod file_manager;
 mod http;
+mod ssl;
 
-use fs::FileManager;
+use file_manager::FileManager;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -16,7 +18,10 @@ async fn main() -> std::io::Result<()> {
         PathBuf::from(".")
     });
 
+    // SSL setup
+    let builder = ssl::load_or_create_certificates();
+
     info!("Starting server with base directory: {:?}", base_dir);
     let file_manager = FileManager::new(base_dir);
-    http::run_http_server(file_manager).await
+    http::run_http_server(file_manager, builder).await
 }
