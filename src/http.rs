@@ -3,19 +3,34 @@ use std::path::{PathBuf, Path};
 use crate::fs::FileManager;
 
 async fn file_or_directory_handler(path: Option<web::Path<String>>, file_manager: web::Data<FileManager>) -> impl Responder {
-    // Extract the path or default to the root directory
     let path_str = path.map_or(".".to_string(), |p| p.into_inner());
-    
+
     match file_manager.parse_path(&path_str) {
         Some(full_path) => {
             if let Some(file_type) = file_manager.path_type(&full_path) {
                 if file_type.is_dir() {
                     match file_manager.list_directory(&full_path) {
                         Ok(entries) => {
+                            // Start building the response
                             let mut response = String::from("<ul>");
+
+                            // Breadcrumb navigation
+                            let mut breadcrumb_path = String::new();
+                            response.push_str("<div>");
+                            for (index, component) in path_str.split('/').enumerate() {
+                                if index > 0 {
+                                    breadcrumb_path.push('/');
+                                }
+                                breadcrumb_path.push_str(component);
+                                let link = format!("<a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component);
+                                response.push_str(&link);
+                            }
+                            response.push_str("</div>");
+
+                            // Directory contents
                             for entry in entries {
                                 let file_name = entry.file_name().unwrap().to_string_lossy();
-                                let link_path = format!("{}/{}", path_str, file_name); // Correctly format the path relative to the current directory
+                                let link_path = format!("{}/{}", path_str, file_name);
                                 let link = format!("<li><a href=\"/{0}\">{1}</a></li>", link_path, file_name);
                                 response.push_str(&link);
                             }
