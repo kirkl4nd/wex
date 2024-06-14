@@ -1,10 +1,13 @@
+use dirs::data_local_dir;
+use log::info;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
+use openssl::x509::X509;
+use rcgen::{
+    date_time_ymd, generate_simple_self_signed, Certificate, CertificateParams, DistinguishedName,
+    DnType, KeyPair, SanType,
+};
 use std::fs::{self, File};
 use std::path::PathBuf;
-use dirs::data_local_dir;
-use rcgen::{generate_simple_self_signed, Certificate, CertificateParams, KeyPair, date_time_ymd, DistinguishedName, DnType, SanType};
-use log::info;
-use openssl::x509::X509;
 
 /// Load or create SSL certificates.
 pub fn load_or_create_certificates() -> SslAcceptorBuilder {
@@ -54,9 +57,9 @@ fn generate_certificates(cert_path: &PathBuf, key_path: &PathBuf) {
     let cert = params.self_signed(&key_pair).unwrap();
 
     let pem_serialized = cert.pem();
-	println!("{pem_serialized}");
-	println!("{}", key_pair.serialize_pem());
-	fs::create_dir_all("certs/").unwrap();
-	fs::write(cert_path, pem_serialized.as_bytes()).unwrap();
-	fs::write(key_path, key_pair.serialize_pem().as_bytes()).unwrap();
+    println!("{pem_serialized}");
+    println!("{}", key_pair.serialize_pem());
+    fs::create_dir_all("certs/").unwrap();
+    fs::write(cert_path, pem_serialized.as_bytes()).unwrap();
+    fs::write(key_path, key_pair.serialize_pem().as_bytes()).unwrap();
 }

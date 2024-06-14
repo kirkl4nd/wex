@@ -1,9 +1,10 @@
-use log::{warn, info};
+use log::{info, warn};
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::env;
 use std::path::PathBuf;
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 mod file_manager;
+mod html;
 mod http;
 mod ssl;
 

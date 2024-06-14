@@ -19,7 +19,10 @@ impl FileManager {
         if canonical_path.starts_with(&self.base_path) {
             Ok(canonical_path)
         } else {
-            Err(io::Error::new(io::ErrorKind::PermissionDenied, "Path is outside the base directory"))
+            Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Path is outside the base directory",
+            ))
         }
     }
 

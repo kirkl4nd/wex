@@ -1,12 +1,20 @@
-use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Responder, middleware::Logger};
-use openssl::ssl::SslAcceptorBuilder;
-use std::path::PathBuf;
 use crate::file_manager::FileManager;
+use actix_web::{middleware::Logger, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use openssl::ssl::SslAcceptorBuilder;
 use std::fs;
+use std::path::PathBuf;
 
-async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<String>>, file_manager: web::Data<FileManager>) -> impl Responder {
+async fn file_or_directory_handler(
+    req: HttpRequest,
+    path: Option<web::Path<String>>,
+    file_manager: web::Data<FileManager>,
+) -> impl Responder {
     let path_str = path.map_or_else(|| ".".to_string(), |p| p.into_inner());
-    let host = req.headers().get("host").and_then(|v| v.to_str().ok()).unwrap_or("unknown host");
+    let host = req
+        .headers()
+        .get("host")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown host");
 
     match file_manager.path_type(&path_str) {
         Ok(file_type) => {
@@ -17,24 +25,32 @@ async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<Stri
             } else {
                 HttpResponse::NotFound().body("Resource is neither a file nor a directory")
             }
-        },
+        }
         Err(e) => error_response("Error determining file type", &e),
     }
 }
 
-async fn directory_response(file_manager: &web::Data<FileManager>, host: &str, path_str: &str) -> HttpResponse {
+async fn directory_response(
+    file_manager: &web::Data<FileManager>,
+    host: &str,
+    path_str: &str,
+) -> HttpResponse {
     match file_manager.list_directory(path_str) {
         Ok(entries) => {
             let html_content = construct_html(host, path_str, entries).await;
-            HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_content)
-        },
+            HttpResponse::Ok()
+                .content_type("text/html; charset=utf-8")
+                .body(html_content)
+        }
         Err(e) => error_response("Failed to list directory", &e),
     }
 }
 
 async fn file_response(file_manager: &web::Data<FileManager>, path_str: &str) -> HttpResponse {
     match file_manager.read_file_contents(path_str) {
-        Ok(contents) => HttpResponse::Ok().content_type("application/octet-stream").body(contents),
+        Ok(contents) => HttpResponse::Ok()
+            .content_type("application/octet-stream")
+            .body(contents),
         Err(e) => error_response("Failed to read file", &e),
     }
 }
@@ -47,7 +63,8 @@ fn error_response(message: &str, error: &std::io::Error) -> HttpResponse {
 async fn construct_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -> String {
     let mut html_template = fs::read_to_string("src/web/index.html").unwrap_or_default();
     html_template = html_template.replace("{{host}}", host);
-    let (breadcrumb_navigation, directory_contents) = generate_directory_contents(path_str, entries);
+    let (breadcrumb_navigation, directory_contents) =
+        generate_directory_contents(path_str, entries);
     html_template = html_template.replace("{{breadcrumb_navigation}}", &breadcrumb_navigation);
     html_template = html_template.replace("{{directory_contents}}", &directory_contents);
     html_template
@@ -63,7 +80,10 @@ fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String
                 breadcrumb_path.push('/');
             }
             breadcrumb_path.push_str(component);
-            breadcrumb_navigation.push_str(&format!(" <a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component));
+            breadcrumb_navigation.push_str(&format!(
+                " <a href=\"/{0}\">{1}</a> / ",
+                breadcrumb_path, component
+            ));
         }
     }
     for entry in entries {
@@ -71,12 +91,18 @@ fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String
         let link_path = format!("{}/{}", path_str, file_name);
         let is_dir = entry.metadata().map(|m| m.is_dir()).unwrap_or(false);
         let icon_class = if is_dir { "folder-icon" } else { "file-icon" };
-        directory_contents.push_str(&format!("<li><span class=\"icon {0}\"></span><a href=\"/{1}\">{2}</a></li>", icon_class, link_path, file_name));
+        directory_contents.push_str(&format!(
+            "<li><span class=\"icon {0}\"></span><a href=\"/{1}\">{2}</a></li>",
+            icon_class, link_path, file_name
+        ));
     }
     (breadcrumb_navigation, directory_contents)
 }
 
-pub async fn run_http_server(file_manager: FileManager, builder: SslAcceptorBuilder) -> std::io::Result<()> {
+pub async fn run_http_server(
+    file_manager: FileManager,
+    builder: SslAcceptorBuilder,
+) -> std::io::Result<()> {
     let file_manager_data = web::Data::new(file_manager);
     HttpServer::new(move || {
         App::new()
