@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Responder};
+use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Responder, middleware::Logger};
 use std::fs;
 use std::path::{PathBuf, Path};
 use crate::fs::FileManager;
@@ -81,6 +81,7 @@ pub async fn run_http_server(file_manager: FileManager) -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(Logger::default())  // Add this line to wrap your app with the Logger middleware
             .app_data(file_manager_data.clone())
             .route("/", web::get().to(file_or_directory_handler))
             .route("/{path:.*}", web::get().to(file_or_directory_handler))
