@@ -37,14 +37,16 @@ async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<Stri
                             for entry in entries {
                                 let file_name = entry.file_name().unwrap().to_string_lossy();
                                 let link_path = format!("{}/{}", path_str, file_name);
-                                let link = format!("<li><a href=\"/{0}\">{1}</a></li>", link_path, file_name);
+                                let is_dir = entry.metadata().map(|m| m.is_dir()).unwrap_or(false);
+                                let icon_class = if is_dir { "folder-icon" } else { "file-icon" };
+                                let link = format!("<li><span class=\"icon {0}\"></span><a href=\"/{1}\">{2}</a></li>", icon_class, link_path, file_name);
                                 directory_contents.push_str(&link);
                             }
 
                             html_template = html_template.replace("{{breadcrumb_navigation}}", &breadcrumb_navigation);
                             html_template = html_template.replace("{{directory_contents}}", &directory_contents);
 
-                            HttpResponse::Ok().content_type("text/html").body(html_template)
+                            HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_template)
                         },
                         Err(_) => HttpResponse::InternalServerError().finish(),
                     }

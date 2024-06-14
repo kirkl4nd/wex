@@ -2,10 +2,60 @@
 <html>
 <head>
     <title>{{host}}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #5a5a5a;
+        }
+        div.breadcrumbs {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #e9e9ef;
+            border-radius: 5px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            padding: 8px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+        }
+        ul li a {
+            text-decoration: none;
+            color: #0066cc;
+            flex-grow: 1;
+        }
+        ul li a:hover {
+            text-decoration: underline;
+        }
+        .icon {
+            margin-right: 10px;
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols";
+        }
+        .folder-icon::before {
+            content: '📁';
+            color: #ff8c00; /* Dark orange color for folders */
+        }
+        .file-icon::before {
+            content: '📄';
+            color: #008000; /* Green color for files */
+        }
+    </style>
 </head>
 <body>
     <h1>{{host}}</h1>
-    <div>{{breadcrumb_navigation}}</div>
+    <div class="breadcrumbs">{{breadcrumb_navigation}}</div>
     <ul>{{directory_contents}}</ul>
 </body>
 </html>
