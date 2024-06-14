@@ -13,19 +13,20 @@ impl FileManager {
     }
 
     /// Parses and sanitizes the input path, ensuring it's within the base directory.
-    pub fn parse_path(&self, request_path: &str) -> Option<PathBuf> {
-        let sanitized_path = request_path.trim_start_matches("../");
-        let path = self.base_path.join(sanitized_path).canonicalize().ok()?;
-        if path.starts_with(&self.base_path) {
-            Some(path)
+    pub fn parse_path(&self, request_path: &str) -> io::Result<PathBuf> {
+        let sanitized_path = Path::new(request_path).strip_prefix("../").unwrap_or(Path::new(request_path));
+        let full_path = self.base_path.join(sanitized_path);
+        let canonical_path = full_path.canonicalize()?;
+        if canonical_path.starts_with(&self.base_path) {
+            Ok(canonical_path)
         } else {
-            None
+            Err(io::Error::new(io::ErrorKind::PermissionDenied, "Path is outside the base directory"))
         }
     }
 
     /// Determines the type of the file system entry (file, directory, or none).
-    pub fn path_type(&self, path: &Path) -> Option<fs::FileType> {
-        fs::metadata(path).ok().map(|meta| meta.file_type())
+    pub fn path_type(&self, path: &Path) -> io::Result<fs::FileType> {
+        fs::metadata(path).map(|meta| meta.file_type())
     }
 
     /// Lists the contents of a directory.
