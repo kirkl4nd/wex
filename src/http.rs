@@ -50,7 +50,14 @@ async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<Stri
                     }
                 } else if file_type.is_file() {
                     match file_manager.read_file_contents(&full_path) {
-                        Ok(contents) => HttpResponse::Ok().content_type("application/octet-stream").body(contents),
+                        Ok(contents) => {
+                            let file_name = full_path.file_name().unwrap().to_string_lossy().to_string();
+                            let content_disposition = format!("attachment; filename=\"{}\"", file_name);
+                            HttpResponse::Ok()
+                                .content_type("application/octet-stream")
+                                .header("Content-Disposition", content_disposition)
+                                .body(contents)
+                        },
                         Err(_) => HttpResponse::InternalServerError().finish(),
                     }
                 } else {
