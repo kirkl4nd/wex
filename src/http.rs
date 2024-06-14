@@ -32,6 +32,9 @@ async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<Stri
                                     let link = format!(" <a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component);
                                     breadcrumb_navigation.push_str(&link);
                                 }
+                                // Add the "../" link to go up a directory with a specific class 'up-directory'
+                                let parent_path = Path::new(&path_str).parent().map_or(".", |p| p.to_str().unwrap_or("."));
+                                directory_contents.push_str(&format!("<li class=\"up-directory\"><span class=\"icon folder-icon\"></span><a href=\"/{0}\">../</a></li>", parent_path));
                             }
 
                             for entry in entries {
