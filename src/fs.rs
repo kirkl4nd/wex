@@ -14,7 +14,8 @@ impl FileManager {
 
     /// Parses and sanitizes the input path, ensuring it's within the base directory.
     pub fn parse_path(&self, request_path: &str) -> Option<PathBuf> {
-        let path = self.base_path.join(request_path).canonicalize().ok()?;
+        let sanitized_path = request_path.trim_start_matches("../");
+        let path = self.base_path.join(sanitized_path).canonicalize().ok()?;
         if path.starts_with(&self.base_path) {
             Some(path)
         } else {
