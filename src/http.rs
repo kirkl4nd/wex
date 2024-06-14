@@ -1,6 +1,7 @@
 use crate::file_manager::FileManager;
 use crate::html::construct_html; // Import the construct_html function from html.rs
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::dev::ConnectionInfo;
 use log::{error, info};
 use openssl::ssl::SslAcceptorBuilder;
 
@@ -9,12 +10,10 @@ async fn file_or_directory_handler(
     path: Option<web::Path<String>>,
     file_manager: web::Data<FileManager>,
 ) -> impl Responder {
+    let conn_info = req.connection_info();
+    let host = conn_info.host();
+    
     let path_str = path.map_or_else(|| ".".to_string(), |p| p.into_inner());
-    let host = req
-        .headers()
-        .get("host")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("unknown host");
 
     info!("Handling request for host: {} and path: {}", host, path_str);
 
