@@ -1,5 +1,5 @@
 use crate::file_manager::FileManager;
-use actix_web::{middleware::Logger, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use openssl::ssl::SslAcceptorBuilder;
 use crate::html::construct_html; // Import the construct_html function from html.rs
 

@@ -1,12 +1,11 @@
 use dirs::data_local_dir;
-use log::info;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use openssl::x509::X509;
 use rcgen::{
-    date_time_ymd, generate_simple_self_signed, Certificate, CertificateParams, DistinguishedName,
+    date_time_ymd, CertificateParams, DistinguishedName,
     DnType, KeyPair, SanType,
 };
-use std::fs::{self, File};
+use std::fs::{self};
 use std::path::PathBuf;
 
 /// Load or create SSL certificates.

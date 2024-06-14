@@ -1,6 +1,6 @@
 use std::fs::{self, File};
-use std::io::{self, Read};
-use std::path::{Path, PathBuf};
+use std::io::{self};
+use std::path::{PathBuf};
 
 pub struct FileManager {
     base_path: PathBuf,

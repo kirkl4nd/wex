@@ -1,5 +1,4 @@
 use log::{info, warn};
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::env;
 use std::path::PathBuf;
 
