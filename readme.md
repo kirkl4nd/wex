@@ -1,43 +1,33 @@
 # wex - a web file explorer
 
 ## Overview
-`wex` is a web-based file explorer designed to allow users to interact with a filesystem through a web interface. This tool is particularly useful for remote management of files on a server, providing capabilities such as viewing, downloading, and managing files and directories.
+`wex` is a secure web-based file explorer that enables users to manage files on a server via a web interface. It is ideal for remote file management, offering features like file browsing, downloading, and directory viewing without exposing the full filesystem paths to the user interface.
 
 ## Features
-- **File Browsing**: Navigate through the directories on the server.
-- **File Download**: Download files directly from the web interface.
-- **Directory Viewing**: View the contents of directories, with each item in the directory (file or folder) represented as a clickable link.
+- **File Browsing**: Navigate through server directories securely.
+- **File Download**: Easily download files through the web interface.
+- **Directory Viewing**: View directory contents securely; each item is a clickable link that does not expose the full path.
+
+## Safety and Security
+`wex` prioritizes security by ensuring that the full filesystem paths are never exposed outside the `FileManager` struct. This encapsulation helps prevent unauthorized path access and potential security vulnerabilities:
+
+- **Path Handling**: All path operations are securely managed within the `FileManager` struct, ensuring that paths are not directly exposed to the end user or through the web interface.
+- **Secure Access**: The system is designed to prevent exposure of sensitive file system details, providing a safe environment for file management.
 
 ## Usage
-- ```host:port/```: view current directory
-- ```host:port/path```: view directory contents, or download file
+Access the web interface:
+- `http://host:port/`: View the current directory.
+- `http://host:port/path`: View directory contents or download a specific file.
 
 ## Technical Details
-`wex` is built using Rust and leverages the `actix-web` framework for the web server functionality. The application is structured into several modules:
+`wex` is developed in Rust using the `actix-web` framework for robust web server functionality. The application architecture includes:
 
-- **`fs` Module**: Handles all filesystem operations such as parsing paths, determining file types, listing directory contents, and reading files. This module ensures that file operations are securely handled.
-  
-- **`http` Module**: Manages all HTTP server-related functionalities, including routing and responding to HTTP requests. This module uses handlers to serve directory listings and file contents based on the request paths.
+- **`fs` Module**: Manages filesystem operations securely, including path parsing, file type determination, directory listing, and file reading.
+- **`http` Module**: Handles HTTP server functionalities, such as routing and responding to requests, while ensuring directory listings and file contents are securely served.
 
-## Getting Started
-To get started with `wex`, clone the repository and build the project using Cargo, Rust's package manager and build system.
-
-```bash
-git clone https://example.com/wex.git
-cd wex
-cargo build --release
-```
-
-Run the application:
-
-```bash
-cargo run
-```
-
-The server will start, and you can access the web interface by navigating to `http://localhost:8080` in your web browser.
 
 ## Contributing
-Contributions to `wex` are welcome! If you're interested in improving the functionality or adding new features, please fork the repository and submit a pull request.
+We encourage contributions to `wex`. If you wish to contribute, fork the repository, make your changes, and submit a pull request.
 
 ## License
-`wex` is open-sourced under the MIT License. See the LICENSE file for more details.
+`wex` is licensed under the MIT License. For more details, see the LICENSE file.
