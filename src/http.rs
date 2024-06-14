@@ -1,8 +1,8 @@
 use crate::file_manager::FileManager;
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-use openssl::ssl::SslAcceptorBuilder;
 use crate::html::construct_html; // Import the construct_html function from html.rs
-use log::{info, error};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use log::{error, info};
+use openssl::ssl::SslAcceptorBuilder;
 
 async fn file_or_directory_handler(
     req: HttpRequest,
@@ -31,7 +31,7 @@ async fn file_or_directory_handler(
         Err(e) => {
             error!("Error determining file type for path {}: {}", path_str, e);
             error_response("Error determining file type", &e)
-        },
+        }
     }
 }
 
@@ -50,7 +50,7 @@ async fn directory_response(
         Err(e) => {
             error!("Failed to list directory at path {}: {}", path_str, e);
             error_response("Failed to list directory", &e)
-        },
+        }
     }
 }
 
@@ -62,7 +62,7 @@ async fn file_response(file_manager: &web::Data<FileManager>, path_str: &str) ->
         Err(e) => {
             error!("Failed to read file at path {}: {}", path_str, e);
             error_response("Failed to read file", &e)
-        },
+        }
     }
 }
 

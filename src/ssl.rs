@@ -1,18 +1,22 @@
 use dirs::data_local_dir;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use openssl::x509::X509;
-use rcgen::{
-    date_time_ymd, CertificateParams, DistinguishedName,
-    DnType, KeyPair, SanType,
-};
+use rcgen::{date_time_ymd, CertificateParams, DistinguishedName, DnType, KeyPair, SanType};
 use std::fs::{self};
-use std::path::PathBuf;
 use std::io::{self, Error, ErrorKind};
+use std::path::PathBuf;
 
 /// Load or create SSL certificates.
 pub fn load_or_create_certificates() -> io::Result<SslAcceptorBuilder> {
-    let ssl_dir = data_local_dir().ok_or_else(|| Error::new(ErrorKind::NotFound, "Local data directory not found"))?.join(".wex/ssl");
-    fs::create_dir_all(&ssl_dir).map_err(|e| Error::new(ErrorKind::Other, format!("Failed to create SSL directory: {}", e)))?;
+    let ssl_dir = data_local_dir()
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Local data directory not found"))?
+        .join(".wex/ssl");
+    fs::create_dir_all(&ssl_dir).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("Failed to create SSL directory: {}", e),
+        )
+    })?;
 
     let cert_path = ssl_dir.join("cert.pem");
     let key_path = ssl_dir.join("key.pem");
@@ -21,17 +25,28 @@ pub fn load_or_create_certificates() -> io::Result<SslAcceptorBuilder> {
         generate_certificates(&cert_path, &key_path)?;
     }
 
-    let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).map_err(|_| Error::new(ErrorKind::Other, "Failed to create SSL acceptor"))?;
-    builder.set_private_key_file(&key_path, SslFiletype::PEM).map_err(|_| Error::new(ErrorKind::Other, "Failed to set private key"))?;
-    builder.set_certificate_file(&cert_path, SslFiletype::PEM).map_err(|_| Error::new(ErrorKind::Other, "Failed to set certificate"))?;
+    let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())
+        .map_err(|_| Error::new(ErrorKind::Other, "Failed to create SSL acceptor"))?;
+    builder
+        .set_private_key_file(&key_path, SslFiletype::PEM)
+        .map_err(|_| Error::new(ErrorKind::Other, "Failed to set private key"))?;
+    builder
+        .set_certificate_file(&cert_path, SslFiletype::PEM)
+        .map_err(|_| Error::new(ErrorKind::Other, "Failed to set certificate"))?;
 
     Ok(builder)
 }
 
 /// Check if the certificates are expired.
 fn are_certificates_expired(cert_path: &PathBuf) -> io::Result<bool> {
-    let cert_contents = fs::read(cert_path).map_err(|e| Error::new(ErrorKind::Other, format!("Failed to read certificate: {}", e)))?;
-    let cert = X509::from_pem(&cert_contents).map_err(|_| Error::new(ErrorKind::Other, "Failed to parse certificate"))?;
+    let cert_contents = fs::read(cert_path).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("Failed to read certificate: {}", e),
+        )
+    })?;
+    let cert = X509::from_pem(&cert_contents)
+        .map_err(|_| Error::new(ErrorKind::Other, "Failed to parse certificate"))?;
     Ok(cert.not_after() < &openssl::asn1::Asn1Time::days_from_now(0).unwrap())
 }
 
@@ -49,13 +64,25 @@ fn generate_certificates(cert_path: &PathBuf, key_path: &PathBuf) -> io::Result<
         SanType::DnsName("localhost".try_into().unwrap()),
     ];
 
-    let key_pair = KeyPair::generate().map_err(|_| Error::new(ErrorKind::Other, "Failed to generate key pair"))?;
-    let cert = params.self_signed(&key_pair).map_err(|_| Error::new(ErrorKind::Other, "Failed to generate self-signed certificate"))?;
+    let key_pair = KeyPair::generate()
+        .map_err(|_| Error::new(ErrorKind::Other, "Failed to generate key pair"))?;
+    let cert = params.self_signed(&key_pair).map_err(|_| {
+        Error::new(
+            ErrorKind::Other,
+            "Failed to generate self-signed certificate",
+        )
+    })?;
 
     let pem_serialized = cert.pem();
 
-    fs::write(cert_path, pem_serialized.as_bytes()).map_err(|e| Error::new(ErrorKind::Other, format!("Failed to write certificate: {}", e)))?;
-    fs::write(key_path, key_pair.serialize_pem().as_bytes()).map_err(|e| Error::new(ErrorKind::Other, format!("Failed to write key: {}", e)))?;
+    fs::write(cert_path, pem_serialized.as_bytes()).map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("Failed to write certificate: {}", e),
+        )
+    })?;
+    fs::write(key_path, key_pair.serialize_pem().as_bytes())
+        .map_err(|e| Error::new(ErrorKind::Other, format!("Failed to write key: {}", e)))?;
 
     Ok(())
 }

@@ -1,4 +1,4 @@
-use log::{info, warn, error};
+use log::{error, info, warn};
 use std::env;
 use std::path::PathBuf;
 
@@ -23,7 +23,10 @@ async fn main() -> std::io::Result<()> {
         Ok(builder) => builder,
         Err(e) => {
             error!("Failed to set up SSL certificates: {:?}", e);
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, "SSL setup failed"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "SSL setup failed",
+            ));
         }
     };
 
@@ -37,4 +40,3 @@ async fn main() -> std::io::Result<()> {
         }
     }
 }
-
