@@ -15,15 +15,18 @@ async fn file_or_directory_handler(path: Option<web::Path<String>>, file_manager
                             let mut response = String::from("<ul>");
 
                             // Breadcrumb navigation
+                            // Should always show simplified full path, starting with './'
                             let mut breadcrumb_path = String::new();
-                            response.push_str("<div>");
-                            for (index, component) in path_str.split('/').enumerate() {
-                                if index > 0 {
-                                    breadcrumb_path.push('/');
+                            response.push_str("<div><a href=\"/\">.</a> / "); // Always start with the base directory link and a trailing slash with spaces
+                            if path_str != "." {
+                                for (index, component) in path_str.split('/').filter(|&c| !c.is_empty()).enumerate() {
+                                    if index > 0 {
+                                        breadcrumb_path.push('/');
+                                    }
+                                    breadcrumb_path.push_str(component);
+                                    let link = format!(" <a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component); // Added spaces around slashes
+                                    response.push_str(&link);
                                 }
-                                breadcrumb_path.push_str(component);
-                                let link = format!("<a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component);
-                                response.push_str(&link);
                             }
                             response.push_str("</div>");
 
