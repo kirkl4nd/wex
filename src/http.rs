@@ -1,7 +1,7 @@
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Responder, middleware::Logger};
-use std::fs;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use crate::fs::FileManager;
+use std::fs;
 
 async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<String>>, file_manager: web::Data<FileManager>) -> impl Responder {
     let path_str = path.map_or_else(|| ".".to_string(), |p| p.into_inner());
@@ -9,31 +9,12 @@ async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<Stri
     // Extract host information from the request headers
     let host = req.headers().get("host").and_then(|v| v.to_str().ok()).unwrap_or("unknown host");
 
-    match file_manager.parse_path(&path_str) {
-        Ok(full_path) => {
-            match file_manager.path_type(&full_path) {
-                Ok(file_type) => {
-                    if file_type.is_dir() {
-                        match file_manager.list_directory(&full_path) {
-                            Ok(entries) => {
-                                let html_content = construct_html(&host, &path_str, entries).await;
-                                HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_content)
-                            },
-                            Err(_) => HttpResponse::InternalServerError().finish(),
-                        }
-                    } else if file_type.is_file() {
-                        match file_manager.read_file_contents(&full_path) {
-                            Ok(contents) => HttpResponse::Ok().content_type("application/octet-stream").body(contents),
-                            Err(_) => HttpResponse::InternalServerError().finish(),
-                        }
-                    } else {
-                        HttpResponse::NotFound().finish()
-                    }
-                },
-                Err(_) => HttpResponse::NotFound().finish(),
-            }
+    match file_manager.list_directory(&path_str) {
+        Ok(entries) => {
+            let html_content = construct_html(&host, &path_str, entries).await;
+            HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_content)
         },
-        Err(_) => HttpResponse::BadRequest().body("Invalid path"),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -43,7 +24,7 @@ async fn construct_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -> St
     // Replace placeholders
     html_template = html_template.replace("{{host}}", host);
 
-    let mut breadcrumb_navigation = String::from("<a href=\"/\">.</a> / ");
+    let mut breadcrumb_navigation = String::from("<a href=\"/\">Home</a> / ");
     let mut directory_contents = String::new();
     if path_str != "." {
         let mut breadcrumb_path = String::new();
