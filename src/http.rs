@@ -2,6 +2,7 @@ use crate::file_manager::FileManager;
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use openssl::ssl::SslAcceptorBuilder;
 use crate::html::construct_html; // Import the construct_html function from html.rs
+use log::{info, error};
 
 async fn file_or_directory_handler(
     req: HttpRequest,
@@ -15,6 +16,8 @@ async fn file_or_directory_handler(
         .and_then(|v| v.to_str().ok())
         .unwrap_or("unknown host");
 
+    info!("Handling request for host: {} and path: {}", host, path_str);
+
     match file_manager.path_type(&path_str) {
         Ok(file_type) => {
             if file_type.is_dir() {
@@ -25,7 +28,10 @@ async fn file_or_directory_handler(
                 HttpResponse::NotFound().body("Resource is neither a file nor a directory")
             }
         }
-        Err(e) => error_response("Error determining file type", &e),
+        Err(e) => {
+            error!("Error determining file type for path {}: {}", path_str, e);
+            error_response("Error determining file type", &e)
+        },
     }
 }
 
@@ -41,7 +47,10 @@ async fn directory_response(
                 .content_type("text/html; charset=utf-8")
                 .body(html_content)
         }
-        Err(e) => error_response("Failed to list directory", &e),
+        Err(e) => {
+            error!("Failed to list directory at path {}: {}", path_str, e);
+            error_response("Failed to list directory", &e)
+        },
     }
 }
 
@@ -50,13 +59,15 @@ async fn file_response(file_manager: &web::Data<FileManager>, path_str: &str) ->
         Ok(contents) => HttpResponse::Ok()
             .content_type("application/octet-stream")
             .body(contents),
-        Err(e) => error_response("Failed to read file", &e),
+        Err(e) => {
+            error!("Failed to read file at path {}: {}", path_str, e);
+            error_response("Failed to read file", &e)
+        },
     }
 }
 
 fn error_response(message: &str, error: &std::io::Error) -> HttpResponse {
-    log::error!("{}: {}", message, error);
-    HttpResponse::InternalServerError().body(format!("Internal server error: {}", error))
+    HttpResponse::InternalServerError().body(format!("{}: {}", message, error))
 }
 
 pub async fn run_http_server(

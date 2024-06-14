@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::{info, warn, error};
 use std::env;
 use std::path::PathBuf;
 
@@ -19,9 +19,22 @@ async fn main() -> std::io::Result<()> {
     });
 
     // SSL setup
-    let builder = ssl::load_or_create_certificates();
+    let builder = match ssl::load_or_create_certificates() {
+        Ok(builder) => builder,
+        Err(e) => {
+            error!("Failed to set up SSL certificates: {:?}", e);
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "SSL setup failed"));
+        }
+    };
 
     info!("Starting server with base directory: {:?}", base_dir);
     let file_manager = FileManager::new(base_dir);
-    http::run_http_server(file_manager, builder).await
+    match http::run_http_server(file_manager, builder).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("Server failed to start: {:?}", e);
+            Err(e)
+        }
+    }
 }
+
