@@ -2,8 +2,11 @@ use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Responder};
 use std::path::{PathBuf, Path};
 use crate::fs::FileManager;
 
-async fn file_or_directory_handler(path: Option<web::Path<String>>, file_manager: web::Data<FileManager>) -> impl Responder {
+async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<String>>, file_manager: web::Data<FileManager>) -> impl Responder {
     let path_str = path.map_or(".".to_string(), |p| p.into_inner());
+
+    // Extract host information from the request headers
+    let host = req.headers().get("host").and_then(|v| v.to_str().ok()).unwrap_or("unknown host");
 
     match file_manager.parse_path(&path_str) {
         Some(full_path) => {
@@ -12,19 +15,22 @@ async fn file_or_directory_handler(path: Option<web::Path<String>>, file_manager
                     match file_manager.list_directory(&full_path) {
                         Ok(entries) => {
                             // Start building the response
-                            let mut response = String::from("<ul>");
+                            let mut response = String::from("<html><head><title>");
+                            response.push_str(host);
+                            response.push_str("</title></head><body><h1>");
+                            response.push_str(host);
+                            response.push_str("</h1><ul>");
 
                             // Breadcrumb navigation
-                            // Should always show simplified full path, starting with './'
                             let mut breadcrumb_path = String::new();
-                            response.push_str("<div><a href=\"/\">.</a> / "); // Always start with the base directory link and a trailing slash with spaces
+                            response.push_str("<div><a href=\"/\">.</a> / ");
                             if path_str != "." {
                                 for (index, component) in path_str.split('/').filter(|&c| !c.is_empty()).enumerate() {
                                     if index > 0 {
                                         breadcrumb_path.push('/');
                                     }
                                     breadcrumb_path.push_str(component);
-                                    let link = format!(" <a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component); // Added spaces around slashes
+                                    let link = format!(" <a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component);
                                     response.push_str(&link);
                                 }
                             }
@@ -37,7 +43,7 @@ async fn file_or_directory_handler(path: Option<web::Path<String>>, file_manager
                                 let link = format!("<li><a href=\"/{0}\">{1}</a></li>", link_path, file_name);
                                 response.push_str(&link);
                             }
-                            response.push_str("</ul>");
+                            response.push_str("</ul></body></html>");
                             HttpResponse::Ok().content_type("text/html").body(response)
                         },
                         Err(_) => HttpResponse::InternalServerError().finish(),
