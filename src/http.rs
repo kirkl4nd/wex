@@ -11,8 +11,9 @@ async fn file_or_directory_handler(
     file_manager: web::Data<FileManager>,
 ) -> impl Responder {
     let conn_info = req.connection_info();
-    let host = conn_info.host();
-    
+    let host_with_port = conn_info.host();
+    let host = host_with_port.split(':').next().unwrap_or("");
+
     let path_str = path.map_or_else(|| ".".to_string(), |p| p.into_inner());
 
     info!("Handling request for host: {} and path: {}", host, path_str);
