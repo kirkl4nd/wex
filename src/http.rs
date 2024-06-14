@@ -80,7 +80,6 @@ pub async fn run_http_server(file_manager: FileManager, builder: SslAcceptorBuil
     let file_manager_data = web::Data::new(file_manager);
     HttpServer::new(move || {
         App::new()
-            .wrap(Logger::default())
             .app_data(file_manager_data.clone())
             .route("/", web::get().to(file_or_directory_handler))
             .route("/{path:.*}", web::get().to(file_or_directory_handler))
