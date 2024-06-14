@@ -4,35 +4,36 @@ use std::path::{PathBuf, Path};
 use crate::fs::FileManager;
 
 async fn file_or_directory_handler(req: HttpRequest, path: Option<web::Path<String>>, file_manager: web::Data<FileManager>) -> impl Responder {
-    let path_str = path.map_or(".".to_string(), |p| p.into_inner());
+    let path_str = path.map_or_else(|| ".".to_string(), |p| p.into_inner());
 
     // Extract host information from the request headers
     let host = req.headers().get("host").and_then(|v| v.to_str().ok()).unwrap_or("unknown host");
 
     match file_manager.parse_path(&path_str) {
-        Some(full_path) => {
-            if let Some(file_type) = file_manager.path_type(&full_path) {
-                if file_type.is_dir() {
-                    match file_manager.list_directory(&full_path) {
-                        Ok(entries) => {
-                            let html_content = construct_html(&host, &path_str, entries).await;
-                            HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_content)
-                        },
-                        Err(_) => HttpResponse::InternalServerError().finish(),
+        Ok(full_path) => {
+            match file_manager.path_type(&full_path) {
+                Ok(file_type) => {
+                    if file_type.is_dir() {
+                        match file_manager.list_directory(&full_path) {
+                            Ok(entries) => {
+                                let html_content = construct_html(&host, &path_str, entries).await;
+                                HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html_content)
+                            },
+                            Err(_) => HttpResponse::InternalServerError().finish(),
+                        }
+                    } else if file_type.is_file() {
+                        match file_manager.read_file_contents(&full_path) {
+                            Ok(contents) => HttpResponse::Ok().content_type("application/octet-stream").body(contents),
+                            Err(_) => HttpResponse::InternalServerError().finish(),
+                        }
+                    } else {
+                        HttpResponse::NotFound().finish()
                     }
-                } else if file_type.is_file() {
-                    match file_manager.read_file_contents(&full_path) {
-                        Ok(contents) => HttpResponse::Ok().content_type("application/octet-stream").body(contents),
-                        Err(_) => HttpResponse::InternalServerError().finish(),
-                    }
-                } else {
-                    HttpResponse::NotFound().finish()
-                }
-            } else {
-                HttpResponse::NotFound().finish()
+                },
+                Err(_) => HttpResponse::NotFound().finish(),
             }
         },
-        None => HttpResponse::BadRequest().body("Invalid path"),
+        Err(_) => HttpResponse::BadRequest().body("Invalid path"),
     }
 }
 
@@ -40,7 +41,7 @@ async fn construct_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -> St
     let mut html_template = fs::read_to_string("src/web/index.html").unwrap_or_default();
 
     // Replace placeholders
-    html_template = html_template.replace("{{host}}", &host);
+    html_template = html_template.replace("{{host}}", host);
 
     let mut breadcrumb_navigation = String::from("<a href=\"/\">.</a> / ");
     let mut directory_contents = String::new();
@@ -54,7 +55,6 @@ async fn construct_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -> St
             let link = format!(" <a href=\"/{0}\">{1}</a> / ", breadcrumb_path, component);
             breadcrumb_navigation.push_str(&link);
         }
-        // Add the "../" link to go up a directory with a specific class 'up-directory'
         let parent_path = Path::new(&path_str).parent().map_or(".", |p| p.to_str().unwrap_or("."));
         directory_contents.push_str(&format!("<li class=\"up-directory\"><span class=\"icon folder-icon\"></span><a href=\"/{0}\">../</a></li>", parent_path));
     }
@@ -88,4 +88,3 @@ pub async fn run_http_server(file_manager: FileManager) -> std::io::Result<()> {
     .run()
     .await
 }
-
