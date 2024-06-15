@@ -40,12 +40,6 @@ impl FileManager {
             .collect()
     }
 
-    /// Creates a new file at the specified path.
-    pub fn create_file(&self, relative_path: &str) -> io::Result<()> {
-        let file_path = self.full_path(relative_path)?;
-        File::create(file_path).map(|_| ())
-    }
-
     /// Creates a new directory at the specified path.
     pub fn create_directory(&self, relative_path: &str) -> io::Result<()> {
         let dir_path = self.full_path(relative_path)?;
@@ -68,5 +62,11 @@ impl FileManager {
     pub fn read_file_contents(&self, relative_path: &str) -> io::Result<Vec<u8>> {
         let file_path = self.full_path(relative_path)?;
         fs::read(file_path)
+    }
+
+    /// Writes the contents to the specified file path.
+    pub fn write_file_contents(&self, relative_path: &str, contents: &[u8]) -> io::Result<()> {
+        let file_path = self.full_path(relative_path)?;
+        fs::write(file_path, contents)
     }
 }
