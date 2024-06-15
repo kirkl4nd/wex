@@ -86,11 +86,11 @@ async fn upload_file_handler(
         }
         let content_disposition = field.content_disposition();
         let filename = content_disposition.get_filename().unwrap();
-        let filepath = format!("{}/{}", path, filename);
+        let dir_path = path; // Use the path as directory path
 
-        println!("rel filepath: {}", filepath);
+        println!("Directory path: {}, Filename: {}", dir_path, filename);
 
-        match file_manager.write_file_contents(&filepath, &file_contents) {
+        match file_manager.write_file_contents(dir_path, filename, &file_contents) {
             Ok(_) => {
                 return HttpResponse::Ok().body(format!("File {} uploaded successfully", filename));
             },
