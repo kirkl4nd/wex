@@ -14,16 +14,24 @@ impl FileManager {
 
     /// Helper function to construct a full path from a relative path, ensuring it's within the base path.
     fn full_path(&self, relative_path: &str) -> io::Result<PathBuf> {
-        let sanitized_path = self.base_path.join(relative_path);
-        let canonical_path = sanitized_path.canonicalize()?;
-        if canonical_path.starts_with(&self.base_path) {
-            Ok(canonical_path)
-        } else {
-            Err(io::Error::new(
-                io::ErrorKind::PermissionDenied,
-                "Path is outside the base directory",
-            ))
+        let mut path = self.base_path.clone();
+        for component in PathBuf::from(relative_path).components() {
+            match component {
+                std::path::Component::ParentDir => {
+                    // Only pop if it does not go beyond the base path
+                    if path != self.base_path {
+                        path.pop();
+                    } else {
+                        return Err(io::Error::new(io::ErrorKind::PermissionDenied, "Access denied"));
+                    }
+                },
+                std::path::Component::Normal(part) => path.push(part),
+                _ => (), // Skip root and current dir components
+            }
         }
+
+        // No need to check if it starts with base_path because we control the construction
+        Ok(path)
     }
 
     /// Determines the type of the file system entry (file, directory, or none).
@@ -64,10 +72,10 @@ impl FileManager {
         fs::read(file_path)
     }
 
-    /// Writes the contents to the specified file path within the given directory.
-    pub fn write_file_contents(&self, dir_relative_path: &str, filename: &str, contents: &[u8]) -> io::Result<()> {
-        let dir_path = self.full_path(dir_relative_path)?;
-        let file_path = dir_path.join(filename);
+    /// Writes the contents to the specified file path.
+    pub fn write_file_contents(&self, rel_path: &str, contents: &[u8]) -> io::Result<()> {
+        println!("{:?}", rel_path);
+        let file_path = self.full_path(rel_path)?;
         fs::write(file_path, contents)
     }
 
@@ -75,6 +83,7 @@ impl FileManager {
     pub fn move_file_or_directory(&self, from_relative_path: &str, to_relative_path: &str) -> io::Result<()> {
         let from_path = self.full_path(from_relative_path)?;
         let to_path = self.full_path(to_relative_path)?;
+
         fs::rename(from_path, to_path)
     }
 }

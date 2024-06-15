@@ -86,9 +86,9 @@ async fn upload_file_handler(
         }
         let content_disposition = field.content_disposition();
         let filename = content_disposition.get_filename().unwrap();
-        let dir_path = path; // Use the path as directory path
+        let rel_path = format!("{}/{}", path, filename); // Construct the full path including the filename
 
-        match file_manager.write_file_contents(dir_path, filename, &file_contents) {
+        match file_manager.write_file_contents(&rel_path, &file_contents) {
             Ok(_) => {
                 return HttpResponse::Ok().body(format!("File {} uploaded successfully", filename));
             },
@@ -108,6 +108,7 @@ async fn move_file_or_directory_handler(
     file_manager: web::Data<FileManager>,
 ) -> HttpResponse {
     let from_path = req.match_info().query("path");
+
     let mut body = body;
     let mut bytes = web::BytesMut::new();
     while let Some(item) = body.next().await {
@@ -117,8 +118,12 @@ async fn move_file_or_directory_handler(
     let to_path = std::str::from_utf8(&bytes).unwrap_or("");
 
     match file_manager.move_file_or_directory(from_path, to_path) {
-        Ok(_) => HttpResponse::Ok().body("File or directory moved successfully"),
-        Err(e) => HttpResponse::InternalServerError().body(format!("Failed to move file or directory: {}", e)),
+        Ok(_) => {
+            HttpResponse::Ok().body("File or directory moved successfully")
+        },
+        Err(e) => {
+            HttpResponse::InternalServerError().body(format!("Failed to move file or directory: {}", e))
+        },
     }
 }
 
