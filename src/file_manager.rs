@@ -68,7 +68,6 @@ impl FileManager {
     pub fn write_file_contents(&self, dir_relative_path: &str, filename: &str, contents: &[u8]) -> io::Result<()> {
         let dir_path = self.full_path(dir_relative_path)?;
         let file_path = dir_path.join(filename);
-        println!("Writing to: {:?}", file_path); // Print the full path
         fs::write(file_path, contents)
     }
 }
