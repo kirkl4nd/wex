@@ -1,6 +1,6 @@
 use crate::file_manager::FileManager;
 use crate::html::construct_html; // Import the construct_html function from html.rs
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error, HttpMessage};
 use actix_web::dev::ConnectionInfo;
 use log::{error, info};
 use openssl::ssl::SslAcceptorBuilder;
@@ -101,6 +101,27 @@ async fn upload_file_handler(
     HttpResponse::BadRequest().body("No files were uploaded")
 }
 
+/// Handler for moving or renaming a file or directory.
+async fn move_file_or_directory_handler(
+    req: HttpRequest,
+    body: web::Payload,
+    file_manager: web::Data<FileManager>,
+) -> HttpResponse {
+    let from_path = req.match_info().query("path");
+    let mut body = body;
+    let mut bytes = web::BytesMut::new();
+    while let Some(item) = body.next().await {
+        let item = item.unwrap();
+        bytes.extend_from_slice(&item);
+    }
+    let to_path = std::str::from_utf8(&bytes).unwrap_or("");
+
+    match file_manager.move_file_or_directory(from_path, to_path) {
+        Ok(_) => HttpResponse::Ok().body("File or directory moved successfully"),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Failed to move file or directory: {}", e)),
+    }
+}
+
 pub async fn run_http_server(
     file_manager: FileManager,
     builder: SslAcceptorBuilder,
@@ -111,7 +132,8 @@ pub async fn run_http_server(
             .app_data(file_manager_data.clone())
             .route("/", web::get().to(file_or_directory_handler))
             .route("/{path:.*}", web::get().to(file_or_directory_handler))
-            .route("/{path:.*}", web::post().to(upload_file_handler)) // Handle POST requests for file uploads
+            .route("/{path:.*}", web::post().to(upload_file_handler))
+            .route("/{path:.*}", web::put().to(move_file_or_directory_handler)) // Handle PUT requests for moving files or directories
     })
     .bind_openssl("127.0.0.1:8080", builder)?
     .run()
