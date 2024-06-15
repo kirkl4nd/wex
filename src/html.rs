@@ -17,7 +17,7 @@ fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String
 
     // Add the upload button at the top of the list
     directory_contents.push_str(
-        "<li class=\"upload-item\"><label for=\"file-input\"><span class=\"icon\">➕</span>Upload files</label><input type=\"file\" id=\"file-input\" name=\"files\" multiple onchange=\"uploadFiles()\"></li>"
+        "<li class=\"upload-item\"><label for=\"file-input\" id=\"upload-label\"><span class=\"icon\">➕</span>Upload files</label><input type=\"file\" id=\"file-input\" name=\"files\" multiple onchange=\"uploadFiles()\"></li>"
     );
 
     // Check if the current path is not the root directory
