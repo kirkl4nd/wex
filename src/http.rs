@@ -72,6 +72,37 @@ fn error_response(message: &str, error: &std::io::Error) -> HttpResponse {
     HttpResponse::InternalServerError().body(format!("{}: {}", message, error))
 }
 
+async fn upload_file_handler(
+    req: HttpRequest,
+    mut payload: Multipart,
+    file_manager: web::Data<FileManager>,
+) -> HttpResponse {
+    let path = Some(req.match_info().query("path")).unwrap_or("");
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        let mut file_contents = Vec::new();
+        while let Some(chunk) = field.next().await {
+            let data = chunk.unwrap();
+            file_contents.extend_from_slice(&data);
+        }
+        let content_disposition = field.content_disposition();
+        let filename = content_disposition.get_filename().unwrap();
+        let filepath = format!("{}/{}", path, filename);
+
+        println!("rel filepath: {}", filepath);
+
+        match file_manager.write_file_contents(&filepath, &file_contents) {
+            Ok(_) => {
+                return HttpResponse::Ok().body(format!("File {} uploaded successfully", filename));
+            },
+            Err(e) => {
+                return HttpResponse::InternalServerError().body(format!("Failed to write file: {}", e));
+            }
+        }
+    }
+
+    HttpResponse::BadRequest().body("No files were uploaded")
+}
+
 pub async fn run_http_server(
     file_manager: FileManager,
     builder: SslAcceptorBuilder,
@@ -82,9 +113,9 @@ pub async fn run_http_server(
             .app_data(file_manager_data.clone())
             .route("/", web::get().to(file_or_directory_handler))
             .route("/{path:.*}", web::get().to(file_or_directory_handler))
+            .route("/{path:.*}", web::post().to(upload_file_handler)) // Handle POST requests for file uploads
     })
     .bind_openssl("127.0.0.1:8080", builder)?
     .run()
     .await
 }
-
