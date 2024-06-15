@@ -15,6 +15,11 @@ fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String
     let mut breadcrumb_navigation = String::from("<a href=\"/\">Home</a> / ");
     let mut directory_contents = String::new();
 
+    // Add the upload button at the top of the list
+    directory_contents.push_str(
+        "<li class=\"upload-item\"><label for=\"file-input\"><span class=\"icon\">➕</span>Upload files</label><input type=\"file\" id=\"file-input\" name=\"files\" multiple onchange=\"uploadFiles()\"></li>"
+    );
+
     // Check if the current path is not the root directory
     if path_str != "." {
         let mut breadcrumb_path = String::new();

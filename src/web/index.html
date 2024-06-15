@@ -29,22 +29,38 @@
             margin-top: 5px;
             display: flex;
             align-items: center;
+            padding: 8px;
         }
-        ul li a {
-            display: flex; /* Use flexbox to align items */
-            align-items: center; /* Center items vertically */
-            padding: 8px; /* Apply padding directly to a for clickable area */
+        ul li a, ul li label {
+            display: flex;
+            align-items: center;
             text-decoration: none;
             color: #0066cc;
-            flex-grow: 1; /* Ensures the link uses all available space */
+            flex-grow: 1;
         }
-        ul li a:hover {
+        ul li input[type="file"] {
+            cursor: pointer;
+            opacity: 0;
+            width: 0.1px;
+            height: 0.1px;
+            position: absolute;
+        }
+        ul li label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        ul li label:hover {
             text-decoration: underline;
         }
         .icon {
-            margin-right: 10px; /* Space between icon and text */
-            margin-left: 10px; /* Space between icon and left border */
+            margin-right: 10px;
+            margin-left: 10px;
             font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols";
+        }
+        .upload-item {
+            margin-bottom: 15px; /* Extra space between upload button and next item */
         }
         .folder-icon::before {
             content: '📁';
@@ -73,6 +89,47 @@
 <body>
     <h1>{{host}}</h1>
     <div class="breadcrumbs">{{breadcrumb_navigation}}</div>
-    <ul>{{directory_contents}}</ul>
+    <ul>
+        
+        {{directory_contents}}
+    </ul>
+    <script>
+        async function uploadFiles() {
+            const files = document.getElementById('file-input').files;
+            const uploadLabel = document.getElementById('upload-label');
+            if (files.length === 0) {
+                uploadLabel.textContent = 'Upload files';
+                return; // No files selected, exit the function
+            }
+            const fileText = files.length === 1 ? 'file' : 'files';
+            uploadLabel.textContent = `Uploading ${files.length} ${fileText}...`;
+
+            const path = window.location.pathname; // Get the current directory from the URL
+            const formData = new FormData();
+
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            try {
+                const response = await fetch(path, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    alert('Files uploaded successfully.');
+                    window.location.reload(); // Reload the page to show the new files
+                } else {
+                    alert('Failed to upload files.');
+                    uploadLabel.textContent = 'Upload files';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error uploading files.');
+                uploadLabel.textContent = 'Upload files';
+            }
+        }
+    </script>
 </body>
 </html>
