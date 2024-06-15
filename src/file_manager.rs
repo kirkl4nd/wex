@@ -1,6 +1,6 @@
 use std::fs::{self, File};
-use std::io::{self};
-use std::path::PathBuf;
+use std::io::{self, Error, ErrorKind};
+use std::path::{PathBuf, Component};
 
 pub struct FileManager {
     base_path: PathBuf,
@@ -15,22 +15,27 @@ impl FileManager {
     /// Helper function to construct a full path from a relative path, ensuring it's within the base path.
     fn full_path(&self, relative_path: &str) -> io::Result<PathBuf> {
         let mut path = self.base_path.clone();
-        for component in PathBuf::from(relative_path).components() {
+        let relative = PathBuf::from(relative_path);
+
+        for component in relative.components() {
             match component {
-                std::path::Component::ParentDir => {
-                    // Only pop if it does not go beyond the base path
-                    if path != self.base_path {
-                        path.pop();
-                    } else {
-                        return Err(io::Error::new(io::ErrorKind::PermissionDenied, "Access denied"));
+                Component::ParentDir => {
+                    let mut tentative_path = path.clone();
+                    tentative_path.pop();
+                    if tentative_path < self.base_path {
+                        return Err(Error::new(ErrorKind::PermissionDenied, "Access denied"));
                     }
+                    path = tentative_path;
                 },
-                std::path::Component::Normal(part) => path.push(part),
+                Component::Normal(part) => path.push(part),
                 _ => (), // Skip root and current dir components
             }
         }
 
-        // No need to check if it starts with base_path because we control the construction
+        if !path.starts_with(&self.base_path) {
+            return Err(Error::new(ErrorKind::PermissionDenied, "Access outside of base path"));
+        }
+
         Ok(path)
     }
 
