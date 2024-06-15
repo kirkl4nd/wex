@@ -70,4 +70,11 @@ impl FileManager {
         let file_path = dir_path.join(filename);
         fs::write(file_path, contents)
     }
+
+    /// Moves or renames a file from one path to another.
+    pub fn move_file(&self, from_relative_path: &str, to_relative_path: &str) -> io::Result<()> {
+        let from_path = self.full_path(from_relative_path)?;
+        let to_path = self.full_path(to_relative_path)?;
+        fs::rename(from_path, to_path)
+    }
 }
