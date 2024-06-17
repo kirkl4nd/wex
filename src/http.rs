@@ -1,5 +1,5 @@
 use crate::file_manager::FileManager;
-use crate::html::construct_html; // Import the construct_html function from html.rs
+use crate::html::generate_directory_listing_html; // Updated import
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error, HttpMessage};
 use actix_web::dev::ConnectionInfo;
 use log::{error, info};
@@ -44,7 +44,7 @@ async fn directory_response(
 ) -> HttpResponse {
     match file_manager.list_directory(path_str) {
         Ok(entries) => {
-            let html_content = construct_html(host, path_str, entries).await;
+            let html_content = generate_directory_listing_html(host, path_str, entries).await;
             HttpResponse::Ok()
                 .content_type("text/html; charset=utf-8")
                 .body(html_content)

@@ -1,14 +1,15 @@
 use std::fs;
 use std::path::PathBuf;
 
-pub async fn construct_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -> String {
-    let mut html_template = fs::read_to_string("src/web/index.html").unwrap_or_default();
-    html_template = html_template.replace("{{host}}", host);
-    let (breadcrumb_navigation, directory_contents) =
-        generate_directory_contents(path_str, entries);
-    html_template = html_template.replace("{{breadcrumb_navigation}}", &breadcrumb_navigation);
-    html_template = html_template.replace("{{directory_contents}}", &directory_contents);
-    html_template
+/// Generates the complete HTML for a directory listing.
+pub async fn generate_directory_listing_html(host: &str, path_str: &str, entries: Vec<PathBuf>) -> String {
+    let static_html = fs::read_to_string("src/web/index.html").unwrap_or_default();
+    let (breadcrumb_navigation, directory_contents) = generate_directory_contents(path_str, entries);
+    let html = static_html
+        .replace("{{host}}", host)
+        .replace("{{breadcrumb_navigation}}", &breadcrumb_navigation)
+        .replace("{{directory_contents}}", &directory_contents);
+    html
 }
 
 fn generate_directory_contents(path_str: &str, entries: Vec<PathBuf>) -> (String, String) {
